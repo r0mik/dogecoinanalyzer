@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy dashboard and required modules
+COPY dashboard/ ./dashboard/
+COPY config/ ./config/
+COPY database/ ./database/
+COPY utils/ ./utils/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Expose Flask port
+EXPOSE 5000
+
+# Run dashboard
+CMD ["python", "-m", "dashboard.app"]
+
