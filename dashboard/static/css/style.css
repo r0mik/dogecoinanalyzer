@@ -41,6 +41,68 @@ header h1 {
     font-size: 1.1em;
 }
 
+/* Timeframe Selector */
+.timeframe-selector-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.timeframe-selector {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.timeframe-label {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1em;
+}
+
+.timeframe-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.timeframe-btn {
+    padding: 10px 20px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #6b7280;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.timeframe-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+}
+
+.timeframe-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.timeframe-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
 /* Stats Section */
 .stats-section {
     display: grid;
@@ -115,14 +177,21 @@ header h1 {
 }
 
 .analysis-section h2 {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     color: #667eea;
     font-size: 1.8em;
 }
 
+.section-subtitle {
+    color: #666;
+    font-size: 0.95em;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
 .analysis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
 }
 
@@ -187,6 +256,380 @@ header h1 {
     height: 100%;
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     transition: width 0.5s ease;
+}
+
+/* Reasoning Section Styling */
+.reasoning-item {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.reasoning-content {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+    border-left: 3px solid #667eea;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #374151;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+    transition: all 0.3s ease;
+}
+
+.reasoning-content:hover {
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
+}
+
+.reasoning-item .analysis-item-label {
+    color: #667eea;
+    font-size: 1em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.reasoning-item .analysis-item-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, #667eea, transparent);
+    margin-left: 10px;
+}
+
+/* Parsed Reasoning Content Styling - Table Format */
+.reasoning-parsed {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Indicators Table */
+.indicators-table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+.indicators-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.indicators-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.indicators-table th {
+    padding: 15px 20px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.indicators-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.indicators-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.indicators-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.indicators-table td {
+    padding: 15px 20px;
+    vertical-align: top;
+}
+
+.indicator-name {
+    font-weight: 600;
+    color: #1f2937;
+    min-width: 150px;
+    width: 20%;
+}
+
+.indicator-name strong {
+    color: #667eea;
+    font-size: 1.05em;
+}
+
+.indicator-value-cell {
+    width: 25%;
+    font-weight: 600;
+    color: #374151;
+}
+
+.indicator-interpretation {
+    width: 55%;
+    color: #6b7280;
+    line-height: 1.6;
+    font-size: 0.95em;
+}
+
+/* Price Value Styling */
+.price-value {
+    font-weight: 700;
+    color: #1f2937;
+    font-family: 'Courier New', monospace;
+    font-size: 1.05em;
+}
+
+/* Change Indicators */
+.change-positive {
+    color: #10b981;
+    font-weight: 700;
+    background: #d1fae5;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.change-negative {
+    color: #ef4444;
+    font-weight: 700;
+    background: #fee2e2;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+/* Trend Badge */
+.trend-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.trend-badge.trend-bullish {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.trend-badge.trend-bearish {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+.trend-badge.trend-neutral {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #374151;
+    border: 1px solid #9ca3af;
+}
+
+/* Indicator Values */
+.indicator-value {
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+/* RSI Styling */
+.rsi-neutral {
+    background: #fef3c7;
+    color: #92400e;
+    border-left: 3px solid #f59e0b;
+}
+
+.rsi-overbought {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 3px solid #ef4444;
+}
+
+.rsi-oversold {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 3px solid #3b82f6;
+}
+
+/* MACD and General Indicator Styling */
+.indicator-bullish {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border-left: 3px solid #10b981;
+}
+
+.indicator-bearish {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border-left: 3px solid #ef4444;
+}
+
+.indicator-neutral {
+    background: #f3f4f6;
+    color: #374151;
+    border-left: 3px solid #9ca3af;
+}
+
+/* Volume Styling */
+.volume-high {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    border-left: 3px solid #3b82f6;
+    font-weight: 700;
+}
+
+.volume-low {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border-left: 3px solid #f59e0b;
+    font-weight: 700;
+}
+
+.volume-normal {
+    background: #f3f4f6;
+    color: #374151;
+    border-left: 3px solid #9ca3af;
+    font-weight: 600;
+}
+
+/* Analysis Summary Sections */
+.analysis-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.summary-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-left: 4px solid #667eea;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.summary-title {
+    color: #667eea;
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-content {
+    color: #374151;
+    line-height: 1.8;
+    font-size: 0.95em;
+}
+
+.summary-content p {
+    margin-bottom: 10px;
+}
+
+.summary-content p:last-child {
+    margin-bottom: 0;
+}
+
+.summary-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.summary-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #e5e7eb;
+    color: #4b5563;
+    line-height: 1.7;
+}
+
+.summary-list li:last-child {
+    border-bottom: none;
+}
+
+.summary-list li strong {
+    color: #667eea;
+    font-weight: 700;
+}
+
+/* Condensed Reasoning Format (for "All" view) */
+.reasoning-condensed {
+    padding: 10px 0;
+}
+
+.condensed-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.condensed-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.9em;
+}
+
+.condensed-label {
+    font-weight: 600;
+    color: #667eea;
+    min-width: 60px;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.condensed-summary {
+    color: #6b7280;
+    font-size: 0.9em;
+    font-style: italic;
+    padding: 5px 0;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .indicators-table {
+        font-size: 0.85em;
+    }
+    
+    .indicators-table th,
+    .indicators-table td {
+        padding: 10px 12px;
+    }
+    
+    .indicator-name {
+        min-width: 100px;
+    }
+    
+    .indicators-table-container {
+        overflow-x: scroll;
+    }
+    
+    .condensed-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .condensed-label {
+        min-width: auto;
+    }
 }
 
 /* Status Section */

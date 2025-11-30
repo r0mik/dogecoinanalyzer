@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_market_data_created_at ON market_data(created_at)
 CREATE TABLE IF NOT EXISTS analysis_results (
     id SERIAL PRIMARY KEY,
     timestamp TIMESTAMP NOT NULL,
-    timeframe VARCHAR(10) NOT NULL,  -- '1h', '4h', '24h'
+    timeframe VARCHAR(10) NOT NULL,  -- '1h', '4h', '24h', '7d', '30d'
     predicted_price DECIMAL(20, 8),
     confidence_score INTEGER,  -- 0-100
     trend_direction VARCHAR(20),  -- 'bullish', 'bearish', 'neutral'

@@ -53,3 +53,10 @@ RETRY_DELAY = 2  # seconds
 DOGECOIN_SYMBOL = 'DOGE'
 DOGECOIN_ID = 'dogecoin'  # CoinGecko ID
 
+# Local LLM Model Configuration (e.g., LM Studio)
+LOCAL_MODEL_ENABLED = os.getenv('LOCAL_MODEL_ENABLED', 'false').lower() == 'true'
+LOCAL_MODEL_URL = os.getenv('LOCAL_MODEL_URL', 'http://127.0.0.1:1234')
+LOCAL_MODEL_TIMEOUT = int(os.getenv('LOCAL_MODEL_TIMEOUT', '30'))  # seconds
+LOCAL_MODEL_TEMPERATURE = float(os.getenv('LOCAL_MODEL_TEMPERATURE', '0.7'))
+LOCAL_MODEL_MAX_TOKENS = int(os.getenv('LOCAL_MODEL_MAX_TOKENS', '500'))
+

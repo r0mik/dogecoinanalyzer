@@ -217,6 +217,18 @@ SECRET_KEY=your-secret-key-here
 # Logging
 LOG_LEVEL=INFO
 LOG_FILE=logs/dogeanalyze.log
+
+# Local LLM Model Configuration (e.g., LM Studio)
+# Set LOCAL_MODEL_ENABLED=true to enable local model analysis
+LOCAL_MODEL_ENABLED=false
+# URL of your local LLM server (LM Studio default: http://127.0.0.1:1234)
+LOCAL_MODEL_URL=http://127.0.0.1:1234
+# Request timeout in seconds
+LOCAL_MODEL_TIMEOUT=30
+# Temperature for model responses (0.0-1.0, lower = more focused)
+LOCAL_MODEL_TEMPERATURE=0.7
+# Maximum tokens in response
+LOCAL_MODEL_MAX_TOKENS=500
 ```
 
 ## Getting Started
@@ -296,13 +308,30 @@ See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
 The collector script runs continuously, fetching data at configured intervals and storing it in the database.
 
 ### Analysis Bot
-The analysis bot processes recent market data and generates predictions for different timeframes.
+The analysis bot processes recent market data and generates predictions for different timeframes (1h, 4h, 24h, 7d, 30d).
+
+#### Local LLM Model Integration (Optional)
+The analyzer supports integration with local LLM models (e.g., LM Studio) for enhanced analysis:
+
+1. **Start your local LLM server** (e.g., LM Studio on `http://127.0.0.1:1234`)
+2. **Enable in `.env` file**:
+   ```env
+   LOCAL_MODEL_ENABLED=true
+   LOCAL_MODEL_URL=http://127.0.0.1:1234
+   ```
+3. **Restart the analyzer** - it will automatically use the local model for deeper analysis
+
+When enabled, the analyzer will:
+- Generate enhanced reasoning using the local LLM
+- Provide deeper market insights and context
+- Combine technical analysis with AI-powered interpretation
+- Fall back to basic analysis if the model is unavailable
 
 ### Dashboard
 Access the web interface at `http://localhost:5000` (or configured port) to view:
 - Real-time Dogecoin price and metrics
 - Historical price charts
-- Analysis predictions for 1h, 4h, 24h
+- Analysis predictions for 1h, 4h, 24h, 7d, 30d, 7d, 30d
 - Script status and health monitoring
 
 ## API Endpoints (Planned)

@@ -14,6 +14,21 @@
             <p class="subtitle">Real-time Dogecoin Market Data & Analysis</p>
         </header>
 
+        <!-- Timeframe Selector -->
+        <section class="timeframe-selector-section">
+            <div class="timeframe-selector">
+                <span class="timeframe-label">View Data For:</span>
+                <div class="timeframe-buttons">
+                    <button class="timeframe-btn active" data-timeframe="all">All</button>
+                    <button class="timeframe-btn" data-timeframe="1h">1 Hour</button>
+                    <button class="timeframe-btn" data-timeframe="4h">4 Hours</button>
+                    <button class="timeframe-btn" data-timeframe="24h">24 Hours</button>
+                    <button class="timeframe-btn" data-timeframe="7d">7 Days</button>
+                    <button class="timeframe-btn" data-timeframe="30d">30 Days</button>
+                </div>
+            </div>
+        </section>
+
         <!-- Stats Overview -->
         <section class="stats-section">
             <div class="stat-card">
@@ -50,6 +65,7 @@
         <!-- Analysis Results -->
         <section class="analysis-section">
             <h2>Analysis & Predictions</h2>
+            <p class="section-subtitle">Short-term (1h, 4h, 24h) and Long-term (7d, 30d) Forecasts</p>
             <div class="analysis-grid" id="analysis-grid">
                 <!-- Analysis cards will be inserted here -->
             </div>

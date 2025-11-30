@@ -11,6 +11,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from analyzer.db_helper import DatabaseHelper
 from analyzer.technical_indicators import TechnicalIndicators
+from analyzer.local_model import LocalModelAnalyzer
 from config.settings import ANALYSIS_INTERVAL_MINUTES
 from utils.logger import setup_logger
 
@@ -24,7 +25,15 @@ class PricePredictor:
         """Initialize predictor with database connection."""
         self.db = DatabaseHelper()
         self.indicators = TechnicalIndicators()
-        logger.info("PricePredictor initialized")
+        self.local_model = LocalModelAnalyzer()
+        
+        if self.local_model.enabled:
+            if self.local_model.is_available():
+                logger.info("PricePredictor initialized with local model support")
+            else:
+                logger.warning("Local model enabled but not available - will use basic analysis")
+        else:
+            logger.info("PricePredictor initialized (local model disabled)")
     
     def analyze_timeframe(
         self,
@@ -36,7 +45,7 @@ class PricePredictor:
         
         Args:
             df: DataFrame with market data
-            timeframe: Timeframe string ('1h', '4h', '24h')
+            timeframe: Timeframe string ('1h', '4h', '24h', '7d', '30d')
             
         Returns:
             Tuple of (predicted_price, confidence_score, trend_direction, 
@@ -47,14 +56,24 @@ class PricePredictor:
             return 0.0, 0, 'neutral', {}, "No data available"
         
         # Filter data based on timeframe
-        hours_map = {'1h': 1, '4h': 4, '24h': 24}
-        hours = hours_map.get(timeframe, 24)
-        cutoff = datetime.utcnow() - timedelta(hours=hours * 2)  # Get 2x timeframe for analysis
+        # Map timeframes to hours for data filtering
+        timeframe_hours_map = {
+            '1h': 1,
+            '4h': 4,
+            '24h': 24,
+            '7d': 7 * 24,      # 168 hours
+            '30d': 30 * 24     # 720 hours
+        }
+        hours = timeframe_hours_map.get(timeframe, 24)
+        # Get 2x timeframe for analysis to have enough historical data
+        cutoff = datetime.utcnow() - timedelta(hours=hours * 2)
         
         if 'timestamp' in df.columns:
             timeframe_df = df[df['timestamp'] >= cutoff].copy()
         else:
-            timeframe_df = df.tail(min(len(df), hours * 12)).copy()  # Approximate
+            # Approximate: assume data points every 5 minutes
+            data_points_needed = (hours * 2) * 12  # 12 data points per hour (5 min intervals)
+            timeframe_df = df.tail(min(len(df), data_points_needed)).copy()
         
         if timeframe_df.empty:
             timeframe_df = df.tail(min(len(df), 50)).copy()
@@ -74,10 +93,16 @@ class PricePredictor:
         predicted_price = self._predict_price(current_price, indicators, trend_direction, timeframe)
         
         # Calculate confidence score
-        confidence_score = self._calculate_confidence(indicators, trend_direction, timeframe_df)
+        confidence_score = self._calculate_confidence(indicators, trend_direction, timeframe_df, timeframe)
         
         # Generate reasoning
-        reasoning = self._generate_reasoning(indicators, trend_direction, predicted_price, current_price, timeframe)
+        basic_reasoning = self._generate_reasoning(indicators, trend_direction, predicted_price, current_price, timeframe)
+        
+        # Enhance reasoning with local model if available
+        reasoning = self.local_model.enhance_reasoning(
+            timeframe, current_price, predicted_price,
+            trend_direction, indicators, basic_reasoning
+        )
         
         return predicted_price, confidence_score, trend_direction, indicators, reasoning
     
@@ -204,9 +229,11 @@ class PricePredictor:
         
         # Timeframe multipliers (expected percentage change ranges)
         timeframe_multipliers = {
-            '1h': 0.02,   # ±2% for 1 hour
-            '4h': 0.05,   # ±5% for 4 hours
-            '24h': 0.10   # ±10% for 24 hours
+            '1h': 0.02,    # ±2% for 1 hour
+            '4h': 0.05,    # ±5% for 4 hours
+            '24h': 0.10,   # ±10% for 24 hours
+            '7d': 0.20,    # ±20% for 7 days
+            '30d': 0.40    # ±40% for 30 days
         }
         
         multiplier = timeframe_multipliers.get(timeframe, 0.05)
@@ -238,7 +265,8 @@ class PricePredictor:
         self,
         indicators: Dict,
         trend_direction: str,
-        df: pd.DataFrame
+        df: pd.DataFrame,
+        timeframe: str = '24h'
     ) -> int:
         """
         Calculate confidence score (0-100) for the prediction.
@@ -247,11 +275,23 @@ class PricePredictor:
             indicators: Technical indicators
             trend_direction: Trend direction
             df: DataFrame with price data
+            timeframe: Timeframe string for confidence adjustment
             
         Returns:
             Confidence score (0-100)
         """
         confidence = 50  # Base confidence
+        
+        # Adjust base confidence based on timeframe
+        # Longer timeframes have inherently lower confidence
+        timeframe_confidence_adjustment = {
+            '1h': 0,      # No adjustment for short-term
+            '4h': -2,     # Slight reduction
+            '24h': -5,    # Moderate reduction
+            '7d': -15,    # Significant reduction for weekly
+            '30d': -25    # Large reduction for monthly
+        }
+        confidence += timeframe_confidence_adjustment.get(timeframe, 0)
         
         # Increase confidence if we have more indicators
         indicator_count = sum(1 for v in indicators.values() if v is not None and isinstance(v, (int, float)))
@@ -314,12 +354,26 @@ class PricePredictor:
         price_change_pct = ((predicted_price - current_price) / current_price) * 100
         direction = "increase" if price_change_pct > 0 else "decrease"
         
+        # Format timeframe display
+        timeframe_display = {
+            '1h': '1 hour',
+            '4h': '4 hours',
+            '24h': '24 hours',
+            '7d': '7 days',
+            '30d': '30 days (1 month)'
+        }
+        timeframe_label = timeframe_display.get(timeframe, timeframe)
+        
         reasoning_parts = [
-            f"Analysis for {timeframe} timeframe:",
+            f"Analysis for {timeframe_label} timeframe:",
             f"Current price: ${current_price:.8f}",
             f"Predicted price: ${predicted_price:.8f} ({abs(price_change_pct):.2f}% {direction})",
             f"Trend: {trend_direction.upper()}"
         ]
+        
+        # Add note about timeframe reliability for longer periods
+        if timeframe in ['7d', '30d']:
+            reasoning_parts.append(f"Note: Longer-term predictions ({timeframe_label}) have higher uncertainty")
         
         # Add RSI analysis
         rsi = indicators.get('rsi')
@@ -362,8 +416,9 @@ class PricePredictor:
             logger.info("Starting analysis run")
             self.db.update_script_status('running', 'Analysis in progress')
             
-            # Fetch market data
-            df = self.db.get_market_data(hours=48)
+            # Fetch market data - need more data for longer timeframes (30 days = 720 hours)
+            # Add buffer for analysis calculations
+            df = self.db.get_market_data(hours=800)
             
             if df.empty:
                 error_msg = "No market data available for analysis"
@@ -372,7 +427,7 @@ class PricePredictor:
                 return
             
             # Analyze each timeframe
-            timeframes = ['1h', '4h', '24h']
+            timeframes = ['1h', '4h', '24h', '7d', '30d']
             
             for timeframe in timeframes:
                 try:
