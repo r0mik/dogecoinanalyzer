@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DogeAnalyze - Dogecoin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐕 DogeAnalyze Dashboard</h1>
+            <p class="subtitle">Real-time Dogecoin Market Data & Analysis</p>
+        </header>
+
+        <!-- Stats Overview -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <div class="stat-label">Current Price</div>
+                <div class="stat-value" id="current-price">$0.00</div>
+                <div class="stat-change" id="price-change">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Volume</div>
+                <div class="stat-value" id="volume-24h">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Market Cap</div>
+                <div class="stat-value" id="market-cap">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h High</div>
+                <div class="stat-value" id="high-24h">$0.00</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Low</div>
+                <div class="stat-value" id="low-24h">$0.00</div>
+            </div>
+        </section>
+
+        <!-- Price Chart -->
+        <section class="chart-section">
+            <h2>Price History (Last 24 Hours)</h2>
+            <div class="chart-container">
+                <canvas id="price-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Analysis Results -->
+        <section class="analysis-section">
+            <h2>Analysis & Predictions</h2>
+            <div class="analysis-grid" id="analysis-grid">
+                <!-- Analysis cards will be inserted here -->
+            </div>
+        </section>
+
+        <!-- Script Status -->
+        <section class="status-section">
+            <h2>Service Status</h2>
+            <div class="status-grid" id="status-grid">
+                <!-- Status cards will be inserted here -->
+            </div>
+        </section>
+
+        <footer>
+            <p>Last updated: <span id="last-update">--</span></p>
+            <p class="refresh-info">Auto-refreshes every 30 seconds</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
+
