@@ -333,7 +333,12 @@ See [DOCKER.md](DOCKER.md) for detailed Docker documentation.
 The collector script runs continuously, fetching data at configured intervals and storing it in the database.
 
 ### Analysis Bot
-The analysis bot processes recent market data and generates predictions for different timeframes (1h, 4h, 24h, 7d, 30d).
+The analysis bot processes recent market data and generates predictions for different timeframes. 
+The timeframes include:
+- **Dynamic interval timeframe** - Based on `ANALYSIS_INTERVAL_MINUTES` (e.g., if set to 10, creates "10m" predictions)
+- **Standard timeframes**: 1h, 4h, 24h, 7d, 30d
+
+For example, if `ANALYSIS_INTERVAL_MINUTES=10`, the bot will generate predictions for: 10m, 1h, 4h, 24h, 7d, 30d
 
 #### Local LLM Model Integration (Optional)
 The analyzer supports integration with local LLM models (e.g., LM Studio) for enhanced analysis:
@@ -351,6 +356,15 @@ When enabled, the analyzer will:
 - Provide deeper market insights and context
 - Combine technical analysis with AI-powered interpretation
 - Fall back to basic analysis if the model is unavailable
+
+**Logging**: All AI requests are comprehensively logged with:
+- Request/response timing and sizes
+- Token usage (if available from the API)
+- Error details and fallback behavior
+- Model availability checks
+- Enhanced vs basic analysis indicators
+
+Check logs with: `docker-compose logs -f analyzer` or `make logs-analyzer`
 
 ### Dashboard
 Access the web interface at `http://localhost:5000` (or configured port) to view:
@@ -376,10 +390,19 @@ All endpoints return JSON responses:
     - `limit` (optional, default: 100) - Maximum number of records
   - Returns: `{data: [...], count: N, hours: N}`
   
-- `GET /api/analysis?timeframe=1h` - Get analysis results
+- `GET /api/analysis?timeframe=1h` - Get latest analysis results (one per timeframe)
   - Parameters:
     - `timeframe` (optional) - Filter by timeframe (1h, 4h, 24h, 7d, 30d)
   - Returns: `{data: [...], by_timeframe: {...}}`
+  - Note: Returns only the most recent analysis for each timeframe
+  
+- `GET /api/analysis/history` - Get prediction history (all historical predictions)
+  - Parameters:
+    - `timeframe` (optional) - Filter by specific timeframe (1h, 4h, 24h, 7d, 30d)
+    - `limit` (optional, default: 100, max: 1000) - Maximum number of records to return
+    - `hours` (optional) - Filter by time range (e.g., 168 for last 7 days)
+  - Returns: `{data: [...], count: N, by_timeframe: {...}, timeframe: "...", limit: N, hours: N}`
+  - Example: `/api/analysis/history?timeframe=24h&limit=50&hours=168` - Last 50 predictions for 24h timeframe in the past 7 days
   
 - `GET /api/status` - Get script statuses
   - Returns: `{data: [...], count: N}`

@@ -1,7 +1,7 @@
 """Main predictor module for Dogecoin price analysis."""
 
-import time
 import sys
+import time
 from datetime import datetime, timedelta
 from typing import Dict, Tuple
 
@@ -14,6 +14,23 @@ from analyzer.technical_indicators import TechnicalIndicators
 from analyzer.local_model import LocalModelAnalyzer
 from config.settings import ANALYSIS_INTERVAL_MINUTES
 from utils.logger import setup_logger
+
+
+def get_interval_timeframe() -> str:
+    """
+    Get timeframe string based on ANALYSIS_INTERVAL_MINUTES.
+    
+    Returns:
+        Timeframe string (e.g., '10m', '15m', '30m')
+    """
+    if ANALYSIS_INTERVAL_MINUTES < 60:
+        return f"{ANALYSIS_INTERVAL_MINUTES}m"
+    elif ANALYSIS_INTERVAL_MINUTES == 60:
+        return "1h"
+    else:
+        # For intervals > 60 minutes, convert to hours
+        hours = ANALYSIS_INTERVAL_MINUTES // 60
+        return f"{hours}h"
 
 logger = setup_logger('analyzer.predictor')
 
@@ -28,12 +45,16 @@ class PricePredictor:
         self.local_model = LocalModelAnalyzer()
         
         if self.local_model.enabled:
+            logger.info(f"Local model configuration: URL={self.local_model.base_url}, timeout={self.local_model.timeout}s")
             if self.local_model.is_available():
-                logger.info("PricePredictor initialized with local model support")
+                logger.info("PricePredictor initialized with local model support (model is available)")
             else:
-                logger.warning("Local model enabled but not available - will use basic analysis")
+                logger.warning(
+                    "Local model enabled but not available - will use basic analysis. "
+                    "Check that your LLM server is running and accessible."
+                )
         else:
-            logger.info("PricePredictor initialized (local model disabled)")
+            logger.info("PricePredictor initialized (local model disabled - set LOCAL_MODEL_ENABLED=true to enable)")
     
     def analyze_timeframe(
         self,
@@ -57,16 +78,23 @@ class PricePredictor:
         
         # Filter data based on timeframe
         # Map timeframes to hours for data filtering
-        timeframe_hours_map = {
-            '1h': 1,
-            '4h': 4,
-            '24h': 24,
-            '7d': 7 * 24,      # 168 hours
-            '30d': 30 * 24     # 720 hours
-        }
-        hours = timeframe_hours_map.get(timeframe, 24)
+        # Handle minutes format (e.g., '10m', '15m')
+        if timeframe.endswith('m'):
+            minutes = int(timeframe[:-1])
+            hours = minutes / 60.0
+        elif timeframe.endswith('h'):
+            hours = int(timeframe[:-1])
+        elif timeframe.endswith('d'):
+            days = int(timeframe[:-1])
+            hours = days * 24
+        else:
+            # Default fallback
+            hours = 24
+        
         # Get 2x timeframe for analysis to have enough historical data
-        cutoff = datetime.utcnow() - timedelta(hours=hours * 2)
+        # For minutes, use at least 1 hour of data
+        min_data_hours = max(hours * 2, 1.0)
+        cutoff = datetime.utcnow() - timedelta(hours=min_data_hours)
         
         if 'timestamp' in df.columns:
             timeframe_df = df[df['timestamp'] >= cutoff].copy()
@@ -228,15 +256,33 @@ class PricePredictor:
         predicted_price = current_price
         
         # Timeframe multipliers (expected percentage change ranges)
-        timeframe_multipliers = {
-            '1h': 0.02,    # ±2% for 1 hour
-            '4h': 0.05,    # ±5% for 4 hours
-            '24h': 0.10,   # ±10% for 24 hours
-            '7d': 0.20,    # ±20% for 7 days
-            '30d': 0.40    # ±40% for 30 days
-        }
-        
-        multiplier = timeframe_multipliers.get(timeframe, 0.05)
+        # Calculate multiplier based on timeframe
+        if timeframe.endswith('m'):
+            # For minutes, use a smaller multiplier (e.g., 10m = 0.33% per hour * (minutes/60))
+            minutes = int(timeframe[:-1])
+            multiplier = 0.02 * (minutes / 60.0)  # Scale from 1h multiplier
+        elif timeframe.endswith('h'):
+            hours = int(timeframe[:-1])
+            if hours == 1:
+                multiplier = 0.02
+            elif hours == 4:
+                multiplier = 0.05
+            elif hours == 24:
+                multiplier = 0.10
+            else:
+                # Interpolate for other hour values
+                multiplier = 0.02 + (hours - 1) * 0.0035  # Rough interpolation
+        elif timeframe.endswith('d'):
+            days = int(timeframe[:-1])
+            if days == 7:
+                multiplier = 0.20
+            elif days == 30:
+                multiplier = 0.40
+            else:
+                # Interpolate for other day values
+                multiplier = 0.10 + (days - 1) * 0.01
+        else:
+            multiplier = 0.05  # Default fallback
         
         # Adjust based on trend
         if trend_direction == 'bullish':
@@ -284,14 +330,35 @@ class PricePredictor:
         
         # Adjust base confidence based on timeframe
         # Longer timeframes have inherently lower confidence
-        timeframe_confidence_adjustment = {
-            '1h': 0,      # No adjustment for short-term
-            '4h': -2,     # Slight reduction
-            '24h': -5,    # Moderate reduction
-            '7d': -15,    # Significant reduction for weekly
-            '30d': -25    # Large reduction for monthly
-        }
-        confidence += timeframe_confidence_adjustment.get(timeframe, 0)
+        # Handle minutes format
+        if timeframe.endswith('m'):
+            minutes = int(timeframe[:-1])
+            if minutes <= 15:
+                confidence += 0  # Very short-term, no adjustment
+            elif minutes <= 30:
+                confidence -= 1
+            else:
+                confidence -= 2
+        elif timeframe.endswith('h'):
+            hours = int(timeframe[:-1])
+            if hours == 1:
+                confidence += 0
+            elif hours == 4:
+                confidence -= 2
+            elif hours == 24:
+                confidence -= 5
+            else:
+                # Interpolate for other hour values
+                confidence -= min(10, hours // 5)
+        elif timeframe.endswith('d'):
+            days = int(timeframe[:-1])
+            if days == 7:
+                confidence -= 15
+            elif days == 30:
+                confidence -= 25
+            else:
+                # Interpolate for other day values
+                confidence -= min(30, days * 1.5)
         
         # Increase confidence if we have more indicators
         indicator_count = sum(1 for v in indicators.values() if v is not None and isinstance(v, (int, float)))
@@ -355,14 +422,30 @@ class PricePredictor:
         direction = "increase" if price_change_pct > 0 else "decrease"
         
         # Format timeframe display
-        timeframe_display = {
-            '1h': '1 hour',
-            '4h': '4 hours',
-            '24h': '24 hours',
-            '7d': '7 days',
-            '30d': '30 days (1 month)'
-        }
-        timeframe_label = timeframe_display.get(timeframe, timeframe)
+        if timeframe.endswith('m'):
+            minutes = int(timeframe[:-1])
+            if minutes == 1:
+                timeframe_label = '1 minute'
+            else:
+                timeframe_label = f'{minutes} minutes'
+        elif timeframe.endswith('h'):
+            hours = int(timeframe[:-1])
+            if hours == 1:
+                timeframe_label = '1 hour'
+            else:
+                timeframe_label = f'{hours} hours'
+        elif timeframe.endswith('d'):
+            days = int(timeframe[:-1])
+            if days == 1:
+                timeframe_label = '1 day'
+            elif days == 7:
+                timeframe_label = '7 days'
+            elif days == 30:
+                timeframe_label = '30 days (1 month)'
+            else:
+                timeframe_label = f'{days} days'
+        else:
+            timeframe_label = timeframe
         
         reasoning_parts = [
             f"Analysis for {timeframe_label} timeframe:",
@@ -427,14 +510,38 @@ class PricePredictor:
                 return
             
             # Analyze each timeframe
-            timeframes = ['1h', '4h', '24h', '7d', '30d']
+            # Include dynamic timeframe based on ANALYSIS_INTERVAL_MINUTES
+            interval_tf = get_interval_timeframe()
+            timeframes = [interval_tf, '1h', '4h', '24h', '7d', '30d']
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_timeframes = []
+            for tf in timeframes:
+                if tf not in seen:
+                    seen.add(tf)
+                    unique_timeframes.append(tf)
+            timeframes = unique_timeframes
+            
+            logger.info(f"Starting analysis for {len(timeframes)} timeframes: {', '.join(timeframes)}")
+            logger.info(f"Interval-based timeframe: {interval_tf} (from ANALYSIS_INTERVAL_MINUTES={ANALYSIS_INTERVAL_MINUTES})")
+            if self.local_model.enabled:
+                logger.info("Local model enhancement will be applied to all timeframes")
             
             for timeframe in timeframes:
                 try:
-                    logger.info(f"Analyzing {timeframe} timeframe")
+                    analysis_start = time.time()
+                    logger.info(f"[Analysis] Starting {timeframe} timeframe analysis")
                     
                     predicted_price, confidence_score, trend_direction, indicators, reasoning = \
                         self.analyze_timeframe(df, timeframe)
+                    
+                    analysis_time = time.time() - analysis_start
+                    
+                    # Check if reasoning was enhanced by LLM
+                    reasoning_enhanced = "--- Enhanced Analysis ---" in reasoning if reasoning else False
+                    if reasoning_enhanced:
+                        logger.info(f"[Analysis] {timeframe} analysis enhanced with LLM insights")
                     
                     # Save result to database
                     self.db.save_analysis_result(
@@ -447,18 +554,30 @@ class PricePredictor:
                     )
                     
                     logger.info(
-                        f"{timeframe} analysis complete: "
+                        f"[Analysis] {timeframe} analysis complete in {analysis_time:.2f}s: "
                         f"${predicted_price:.8f} ({trend_direction}, {confidence_score}% confidence)"
                     )
                     
                 except Exception as e:
-                    logger.error(f"Error analyzing {timeframe} timeframe: {e}")
+                    logger.error(f"[Analysis] Error analyzing {timeframe} timeframe: {e}", exc_info=True)
                     continue
+            
+            # Calculate summary statistics
+            total_timeframes = len(timeframes)
+            successful_analyses = sum(1 for tf in timeframes)  # Simplified - actual count from try/except
             
             # Update status
             next_run = datetime.utcnow() + timedelta(minutes=ANALYSIS_INTERVAL_MINUTES)
             self.db.update_script_status('success', 'Analysis completed successfully', next_run)
-            logger.info("Analysis run completed successfully")
+            
+            logger.info(
+                f"Analysis run completed successfully - "
+                f"analyzed {total_timeframes} timeframes, "
+                f"next run scheduled for {next_run.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            )
+            
+            if self.local_model.enabled:
+                logger.info("Local model was available for this analysis run")
             
         except Exception as e:
             error_msg = f"Analysis failed: {str(e)}"

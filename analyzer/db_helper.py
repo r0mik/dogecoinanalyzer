@@ -91,7 +91,7 @@ class DatabaseHelper:
         Save analysis result to database.
         
         Args:
-            timeframe: Timeframe ('1h', '4h', '24h')
+            timeframe: Timeframe ('1h', '4h', '24h', '7d', '30d')
             predicted_price: Predicted price
             confidence_score: Confidence score (0-100)
             trend_direction: Trend direction ('bullish', 'bearish', 'neutral')
@@ -99,6 +99,9 @@ class DatabaseHelper:
             reasoning: Text explanation of the analysis
         """
         try:
+            # Check if reasoning was enhanced by AI
+            is_ai_enhanced = "--- Enhanced Analysis ---" in reasoning if reasoning else False
+            
             query = text("""
                 INSERT INTO analysis_results 
                 (timestamp, timeframe, predicted_price, confidence_score, 
@@ -118,14 +121,20 @@ class DatabaseHelper:
                 'reasoning': reasoning
             }
             
+            reasoning_size = len(reasoning.encode('utf-8')) if reasoning else 0
+            
             with self.engine.connect() as conn:
                 conn.execute(query, params)
                 conn.commit()
             
-            logger.info(f"Saved analysis result for {timeframe} timeframe")
+            ai_status = " (AI-enhanced)" if is_ai_enhanced else ""
+            logger.info(
+                f"Saved analysis result for {timeframe} timeframe{ai_status} "
+                f"(reasoning size: {reasoning_size} bytes, confidence: {confidence_score}%)"
+            )
             
         except Exception as e:
-            logger.error(f"Error saving analysis result: {e}")
+            logger.error(f"Error saving analysis result for {timeframe}: {e}", exc_info=True)
             raise
     
     def update_script_status(
